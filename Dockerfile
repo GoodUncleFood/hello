@@ -2,14 +2,14 @@
 FROM golang:latest AS build
 
 # Copy source
-WORKDIR /go/src/github.com/jamespearly/hello
+WORKDIR /app/hello
 COPY . .
 
 # If packages are installed in ./vendor (using dep), we do not need a `go get`
-RUN go get -d -v ./...
+RUN go mod tidy
 
 # Build a statically-linked Go binary for Linux
-RUN CGO_ENABLED=0 GOOS=linux go build -a -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o hello .
 
 # New build phase -- create binary-only image
 FROM alpine:latest
@@ -20,13 +20,13 @@ RUN apk update && \
     apk add ca-certificates && \
     apk add tzdata
 
-WORKDIR /root/
+WORKDIR /app/hello
 
 # Copy files from previous build container
-COPY --from=build /go/src/github.com/jamespearly/hello/main ./
+COPY --from=build /app/hello/hello .
 # COPY --from=build /go/src/github.com/jamespearly/hello/assets ./assets/
 
 RUN pwd && find .
 
 # Start the application
-CMD ["./main"]
+CMD ["./hello"]
