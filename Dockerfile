@@ -1,5 +1,5 @@
 # Start the Go app build
-FROM golang:latest AS build
+FROM public.ecr.aws/docker/library/golang:latest AS build
 
 # Copy source
 WORKDIR /app/hello
@@ -12,7 +12,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o hello .
 
 # New build phase -- create binary-only image
-FROM alpine:latest
+FROM public.ecr.aws/docker/library/alpine:latest
 
 # Add support for HTTPS and time zones
 RUN apk update && \
