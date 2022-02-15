@@ -5,14 +5,27 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - echo GITHUB_COMMIT_MSG $GITHUB_COMMIT_MSG
+      - REPOSITORY_URI=713290919116.dkr.ecr.us-east-1.amazonaws.com/hello
+      - echo Reposity URI $REPOSITORY_URI
+      # Trim commit hash (SHA) to seven characters
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo Commit Hash $COMMIT_HASH
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo Image Tag $IMAGE_TAG
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...          
       - docker build -t hello:latest .
-      - docker tag hello:latest 713290919116.dkr.ecr.us-east-1.amazonaws.com/hello      
+      - docker tag hello:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
-      - docker push 713290919116.dkr.ecr.us-east-1.amazonaws.com/hello
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - printf '[{"name":"hello","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
+artifacts:
+    files: imagedefinitions.json
